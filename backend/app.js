@@ -1,18 +1,21 @@
-const express = require('express')
-const cors = require('cors')
-require('dotenv').config()
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
 
-const app = express()
-const PORT = process.env.PORT || 5000
+dotenv.config();      // Carga variables del archivo .env
+connectDB();          // Establece conexión con MongoDB
 
-app.use(cors())
-app.use(express.json())
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Ruta de prueba
+app.use(cors());
+app.use(express.json());
+
 app.get('/', (req, res) => {
-  res.send('API Task Manager funcionando ✅')
-})
+  res.send('API Task Manager funcionando ✅');
+});
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`)
-})
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
