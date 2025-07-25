@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+
 
 dotenv.config();      // Carga variables del archivo .env
 connectDB();          // Establece conexión con MongoDB
@@ -15,6 +17,8 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('API Task Manager funcionando ✅');
 });
+
+app.use('/api', authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
