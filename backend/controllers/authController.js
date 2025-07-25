@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 // Registrar nuevo usuario
@@ -16,8 +17,12 @@ const registerUser = async (req, res) => {
   }
 
   try {
-    // Crear nuevo usuario
-    const user = await User.create({ name, email, password });
+    // Encriptar la contraseña
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Crear nuevo usuario con la contraseña encriptada
+    const user = await User.create({ name, email, password: hashedPassword });
 
     // Respuesta sin enviar la contraseña
     res.status(201).json({
@@ -30,6 +35,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+// Iniciar sesión
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -40,8 +46,9 @@ const loginUser = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Validar contraseña
-    if (user.password !== password) {
+    // Comparar la contraseña con la almacenada
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
@@ -52,7 +59,7 @@ const loginUser = async (req, res) => {
       email: user.email
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error al iniciar sesión', error });
+    res.status(500).json({ message: 'Error al iniciar sesión', error: error.message });
   }
 };
 
