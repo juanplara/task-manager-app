@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const generateToken = require('../utils/generateToken');
+
 
 // Registrar nuevo usuario
 const registerUser = async (req, res) => {
@@ -40,28 +42,29 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar el usuario por email
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Comparar la contraseña con la almacenada
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
 
-    // Si todo está bien, devolver usuario (sin contraseña)
+    // Todo bien, respondemos con token
     res.status(200).json({
       _id: user._id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      token: generateToken(user._id)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error al iniciar sesión', error: error.message });
   }
 };
+
 
 module.exports = {
   registerUser,
