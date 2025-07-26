@@ -3,10 +3,13 @@ const router = express.Router();
 const { registerUser, loginUser } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
+// Registro
 router.post('/register', registerUser);
+
+// Login
 router.post('/login', loginUser);
 
-// Ruta protegida (solo accesible con token válido)
+// Ruta protegida
 router.get('/profile', protect, (req, res) => {
   res.json({
     message: 'Acceso autorizado',
