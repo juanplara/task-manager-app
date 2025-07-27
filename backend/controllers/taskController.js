@@ -25,15 +25,15 @@ const getTasks = async (req, res) => {
 const createTask = async (req, res) => {
   const { title, description, completed } = req.body;
 
-  if (!title || typeof title !== 'string') {
-    return res.status(400).json({ message: 'El título es obligatorio y debe ser texto' });
+  if (!title) {
+    return res.status(400).json({ message: 'El título es obligatorio' });
   }
 
   try {
     const task = await Task.create({
       title,
       description,
-      completed: completed ?? false,
+      completed, // si viene en el body, lo usa. Si no, se aplica el default.
       user: req.user._id
     });
     res.status(201).json(task);
