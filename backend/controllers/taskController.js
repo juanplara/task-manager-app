@@ -1,11 +1,11 @@
 const Task = require('../models/task');
 
-// Obtener todas las tareas del usuario autenticado con filtro y paginación
+// Obtener todas las tareas del usuario autenticado con filtro, paginación y ordenamiento
 const getTasks = async (req, res) => {
   try {
     const query = { user: req.user._id };
 
-    // Filtro por estado completado (true o false)
+    // Filtro por completed
     if (req.query.completed !== undefined) {
       const completedValue = req.query.completed.toLowerCase();
       if (completedValue === 'true' || completedValue === 'false') {
@@ -15,15 +15,19 @@ const getTasks = async (req, res) => {
       }
     }
 
-    // Parámetros de paginación (por defecto: página 1, 10 tareas por página)
+    // Paginación
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Ordenamiento dinámico
+    const sortBy = req.query.sortBy || 'createdAt'; // campo por el cual ordenar
+    const order = req.query.order === 'asc' ? 1 : -1; // asc o desc
+
     const tasks = await Task.find(query)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }); // Opcional: ordena por fecha de creación (más recientes primero)
+      .sort({ [sortBy]: order });
 
     const total = await Task.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
@@ -39,7 +43,6 @@ const getTasks = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener tareas', error: error.message });
   }
 };
-
 
 // Crear una nueva tarea
 const createTask = async (req, res) => {
