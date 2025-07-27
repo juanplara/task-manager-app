@@ -13,6 +13,11 @@ const validateTask = [
     .isLength({ max: 500 })
     .withMessage('La descripción debe tener como máximo 500 caracteres'),
 
+  body('priority')
+    .optional()
+    .isIn(['low', 'medium', 'high'])
+    .withMessage('La prioridad debe ser low, medium o high'),
+
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

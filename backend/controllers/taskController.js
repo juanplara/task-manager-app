@@ -46,7 +46,7 @@ const getTasks = async (req, res) => {
 
 // Crear una nueva tarea
 const createTask = async (req, res) => {
-  const { title, description, completed } = req.body;
+  const { title, description, completed, priority } = req.body;
 
   if (!title) {
     return res.status(400).json({ message: 'El título es obligatorio' });
@@ -57,6 +57,7 @@ const createTask = async (req, res) => {
       title,
       description,
       completed, // si viene en el body, lo usa. Si no, se aplica el default.
+      priority, // ¡Asegúrate de incluir esto!
       user: req.user._id
     });
     res.status(201).json(task);
@@ -83,6 +84,13 @@ const updateTask = async (req, res) => {
 
     if (req.body.completed !== undefined && typeof req.body.completed !== 'boolean') {
       return res.status(400).json({ message: 'El campo completed debe ser booleano' });
+    }
+
+    if (req.body.priority !== undefined) {
+      const allowedPriorities = ['low', 'medium', 'high'];
+      if (!allowedPriorities.includes(req.body.priority)) {
+        return res.status(400).json({ message: 'El campo priority debe ser: low, medium o high' });
+      }
     }
 
     // Aplicar los cambios y guardar
