@@ -1,6 +1,10 @@
+const mongoose = require('mongoose');
 const Task = require('../models/task');
 
-// Obtener todas las tareas del usuario autenticado con filtro, paginación y ordenamiento
+// Validar si un id es un ObjectId válido de MongoDB
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+// Obtener todas las tareas del usuario autenticado con filtros, paginación y ordenamiento
 const getTasks = async (req, res) => {
   try {
     const query = { user: req.user._id };
@@ -25,7 +29,7 @@ const getTasks = async (req, res) => {
       query.priority = priorityValue;
     }
 
-    // Filtro por título parcial (case-insensitive)
+    // Filtro por coincidencia en el título (insensible a mayúsculas)
     if (req.query.title) {
       query.title = { $regex: req.query.title, $options: 'i' };
     }
@@ -35,7 +39,7 @@ const getTasks = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Ordenamiento
+    // Ordenamiento dinámico
     const sortBy = req.query.sortBy || 'createdAt';
     const order = req.query.order === 'asc' ? 1 : -1;
 
@@ -63,18 +67,23 @@ const getTasks = async (req, res) => {
 const createTask = async (req, res) => {
   const { title, description, completed, priority } = req.body;
 
-  if (!title) {
-    return res.status(400).json({ message: 'El título es obligatorio' });
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({ message: 'El título es obligatorio y debe ser texto' });
+  }
+
+  if (priority && !['low', 'medium', 'high'].includes(priority)) {
+    return res.status(400).json({ message: 'La prioridad debe ser low, medium o high' });
   }
 
   try {
     const task = await Task.create({
       title,
       description,
-      completed, // si viene en el body, lo usa. Si no, se aplica el default.
-      priority, // ¡Asegúrate de incluir esto!
+      completed,
+      priority,
       user: req.user._id
     });
+
     res.status(201).json(task);
   } catch (error) {
     res.status(500).json({ message: 'Error al crear tarea', error: error.message });
@@ -85,6 +94,11 @@ const createTask = async (req, res) => {
 const updateTask = async (req, res) => {
   const { id } = req.params;
 
+  // Validar ID
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'ID inválido' });
+  }
+
   try {
     const task = await Task.findOne({ _id: id, user: req.user._id });
 
@@ -92,7 +106,14 @@ const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
 
-    // Validaciones antes de actualizar
+    // Validaciones de campos permitidos
+    const forbiddenFields = ['user', '_id', 'createdAt'];
+    for (let field of forbiddenFields) {
+      if (req.body[field] !== undefined) {
+        return res.status(400).json({ message: `No está permitido modificar el campo ${field}` });
+      }
+    }
+
     if (req.body.title && typeof req.body.title !== 'string') {
       return res.status(400).json({ message: 'El título debe ser texto' });
     }
@@ -108,7 +129,7 @@ const updateTask = async (req, res) => {
       }
     }
 
-    // Aplicar los cambios y guardar
+    // Aplicar los cambios permitidos
     Object.assign(task, req.body);
     await task.save();
 
@@ -118,10 +139,14 @@ const updateTask = async (req, res) => {
   }
 };
 
-
 // Eliminar una tarea
 const deleteTask = async (req, res) => {
   const { id } = req.params;
+
+  // Validar ID
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'ID inválido' });
+  }
 
   try {
     const task = await Task.findOneAndDelete({ _id: id, user: req.user._id });
