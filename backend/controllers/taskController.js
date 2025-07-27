@@ -1,9 +1,20 @@
 const Task = require('../models/task');
 
-// Obtener todas las tareas del usuario autenticado
+// Obtener todas las tareas del usuario autenticado (con filtro opcional)
 const getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ user: req.user._id });
+    const query = { user: req.user._id };
+
+    if (req.query.completed !== undefined) {
+      const completedValue = req.query.completed.toLowerCase();
+      if (completedValue === 'true' || completedValue === 'false') {
+        query.completed = completedValue === 'true';
+      } else {
+        return res.status(400).json({ message: 'El valor de completed debe ser true o false' });
+      }
+    }
+
+    const tasks = await Task.find(query);
     res.status(200).json(tasks);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener tareas', error: error.message });
