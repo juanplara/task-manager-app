@@ -5,7 +5,7 @@ const getTasks = async (req, res) => {
   try {
     const query = { user: req.user._id };
 
-    // Filtro por completed
+    // Filtro por estado completado
     if (req.query.completed !== undefined) {
       const completedValue = req.query.completed.toLowerCase();
       if (completedValue === 'true' || completedValue === 'false') {
@@ -15,14 +15,29 @@ const getTasks = async (req, res) => {
       }
     }
 
+    // Filtro por prioridad
+    if (req.query.priority) {
+      const priorityValue = req.query.priority.toLowerCase();
+      const validPriorities = ['low', 'medium', 'high'];
+      if (!validPriorities.includes(priorityValue)) {
+        return res.status(400).json({ message: 'La prioridad debe ser low, medium o high' });
+      }
+      query.priority = priorityValue;
+    }
+
+    // Filtro por título parcial (case-insensitive)
+    if (req.query.title) {
+      query.title = { $regex: req.query.title, $options: 'i' };
+    }
+
     // Paginación
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Ordenamiento dinámico
-    const sortBy = req.query.sortBy || 'createdAt'; // campo por el cual ordenar
-    const order = req.query.order === 'asc' ? 1 : -1; // asc o desc
+    // Ordenamiento
+    const sortBy = req.query.sortBy || 'createdAt';
+    const order = req.query.order === 'asc' ? 1 : -1;
 
     const tasks = await Task.find(query)
       .skip(skip)
