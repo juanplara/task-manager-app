@@ -1,10 +1,11 @@
 const Task = require('../models/task');
 
-// Obtener todas las tareas del usuario autenticado (con filtro opcional)
+// Obtener todas las tareas del usuario autenticado con filtro y paginación
 const getTasks = async (req, res) => {
   try {
     const query = { user: req.user._id };
 
+    // Filtro por estado completado (true o false)
     if (req.query.completed !== undefined) {
       const completedValue = req.query.completed.toLowerCase();
       if (completedValue === 'true' || completedValue === 'false') {
@@ -14,12 +15,31 @@ const getTasks = async (req, res) => {
       }
     }
 
-    const tasks = await Task.find(query);
-    res.status(200).json(tasks);
+    // Parámetros de paginación (por defecto: página 1, 10 tareas por página)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const tasks = await Task.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Opcional: ordena por fecha de creación (más recientes primero)
+
+    const total = await Task.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+
+    res.status(200).json({
+      page,
+      limit,
+      totalTasks: total,
+      totalPages,
+      tasks
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener tareas', error: error.message });
   }
 };
+
 
 // Crear una nueva tarea
 const createTask = async (req, res) => {
