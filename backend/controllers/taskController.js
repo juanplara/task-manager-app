@@ -12,16 +12,17 @@ const getTasks = async (req, res) => {
 
 // Crear una nueva tarea
 const createTask = async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, completed } = req.body;
 
-  if (!title) {
-    return res.status(400).json({ message: 'El título es obligatorio' });
+  if (!title || typeof title !== 'string') {
+    return res.status(400).json({ message: 'El título es obligatorio y debe ser texto' });
   }
 
   try {
     const task = await Task.create({
       title,
       description,
+      completed: completed ?? false,
       user: req.user._id
     });
     res.status(201).json(task);
@@ -41,6 +42,16 @@ const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
 
+    // Validaciones antes de actualizar
+    if (req.body.title && typeof req.body.title !== 'string') {
+      return res.status(400).json({ message: 'El título debe ser texto' });
+    }
+
+    if (req.body.completed !== undefined && typeof req.body.completed !== 'boolean') {
+      return res.status(400).json({ message: 'El campo completed debe ser booleano' });
+    }
+
+    // Aplicar los cambios y guardar
     Object.assign(task, req.body);
     await task.save();
 
@@ -49,6 +60,7 @@ const updateTask = async (req, res) => {
     res.status(500).json({ message: 'Error al actualizar tarea', error: error.message });
   }
 };
+
 
 // Eliminar una tarea
 const deleteTask = async (req, res) => {

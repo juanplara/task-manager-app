@@ -3,12 +3,10 @@ const mongoose = require('mongoose');
 const taskSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'El título es obligatorio']
   },
   description: {
-    type: String,
-    trim: true
+    type: String
   },
   completed: {
     type: Boolean,
@@ -19,6 +17,8 @@ const taskSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.model('Task', taskSchema);
