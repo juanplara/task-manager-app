@@ -1,31 +1,42 @@
+// ───────────────────────────────────────────────
+// 📦 Importaciones
 const express = require('express');
-const cors = require('cors');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const authRoutes = require('./routes/authRoutes');
-const taskRoutes = require('./routes/taskRoutes'); // 👈 Importar
-
-dotenv.config();      
-connectDB();          
-
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./docs/swagger');
+const swaggerSpec = require('./config/swaggerConfig'); // asumo que aquí tienes tu spec
 
+// 📄 Cargar variables de entorno
+dotenv.config();
+
+// ⚙️ Inicializar app
+const app = express();
+
+// ───────────────────────────────────────────────
+// 🛠️ Middlewares globales
+app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(mongoSanitize());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+
+// 📑 Documentación
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// 🛣️ Rutas
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/tasks', require('./routes/taskRoutes'));
 
-app.use(cors())
-app.use(express.json())
-
-app.get('/', (req, res) => {
-  res.send('API Task Manager funcionando ✅');
-});
-
-// Rutas
-app.use('/api', authRoutes);            // POST /api/register, /api/login
-app.use('/api/tasks', taskRoutes);      // GET/POST /api/tasks
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
-
+// 🚀 Conexión a la base de datos y servidor
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('✅ Conectado a MongoDB');
+    app.listen(process.env.PORT || 5000, () =>
+      console.log(`🚀 Servidor en puerto ${process.env.PORT || 5000}`)
+    );
+  })
+  .catch(err => console.error(err));
