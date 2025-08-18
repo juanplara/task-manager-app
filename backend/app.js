@@ -5,6 +5,12 @@ require('dotenv').config()
 const app = express()
 const PORT = process.env.PORT || 5000
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./docs/swagger');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
 app.use(cors())
 app.use(express.json())
 
